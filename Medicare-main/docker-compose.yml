@@ -1,0 +1,42 @@
+services:
+  mongo:
+    image: mongo:7
+    container_name: medicare-mongo
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+
+  backend:
+    build:
+      context: .
+      dockerfile: server/Dockerfile
+    container_name: medicare-backend
+    restart: unless-stopped
+    depends_on:
+      - mongo
+    ports:
+      - "4242:4242"
+    environment:
+      PORT: 4242
+      MONGODB_URI: mongodb://mongo:27017/medicare_booking
+      JWT_SECRET: ${JWT_SECRET}
+      STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY}
+      STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET}
+
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        VITE_STRIPE_PUBLISHABLE_KEY: ${VITE_STRIPE_PUBLISHABLE_KEY}
+    container_name: medicare-frontend
+    restart: unless-stopped
+    depends_on:
+      - backend
+    ports:
+      - "5173:80"
+
+volumes:
+  mongo_data:
